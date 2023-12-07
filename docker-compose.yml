@@ -1,0 +1,55 @@
+
+version: '3.8' # Versión de Docker Compose utilizada
+services:
+
+  backend: # Definición del servicio backend
+    build: # Configuración de la construcción del contenedor
+      context: .  # Contexto de construcción en el directorio actual
+      dockerfile: php.dockerfile #Archivo Dockerfile utilizado para construir el contenedor
+    container_name: backend_svc  #Nombre del contenedor
+    ports:
+      - 8080:80  # Puerto 8080 del host mapeado al puerto 80 del contenedor
+
+    volumes:  # Configuración de volúmenes
+      - ./www/:/var/www/html  # Montaje del directorio local ./www/ en /var/www/html del contenedor
+    depends_on: # Dependencia del servicio backend sobre el servicio de base de datos
+      - database 
+    networks:   # Configuración de redes
+      app_network:   # Nombre de la red
+        aliases:
+          - backend_host #Alias para el servicio backend
+
+  database:  # Definición del servicio de base de datos
+    build:  # Configuración de la construcción del contenedor 
+      context: .  # Contexto de construcción en el directorio actual
+      dockerfile: mariadb.dockerfile # Archivo Dockerfile utilizado para construir el contenedor
+    container_name: mariadb_svc  # Nombre del contenedor
+    ports:
+      - 3306:3306    # Puerto* 3306 del host mapeado al puerto 3306 del contenedor
+
+    environment: # Variables de entorno para el contenedor de la base de datos
+      MYSQL_DATABASE: "custom_db" # Nombre de la base de datos
+      MYSQL_ROOT_PASSWORD: "Custom.2023" # Contraseña de la base de datos
+    
+    volumes:
+      - ./schemas/:/var/lib/mysql  # Montaje del directorio local ./schemas/ en /var/lib/mysql del contenedor
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql  # Archivo SQL que se ejecutará al inicializar la base de datos
+    networks: # Configuración de redes
+      app_network:
+        aliases:
+          - mariadb_host
+
+
+
+volumes: # Definición de volúmenes
+  www: {} # Definición de volumen vacío
+  schemas: {} # Definición de volumen vacío
+
+
+networks: # Configuración de redes
+  app_network:
+    name: app_net # Nombre de la red
+    driver: bridge # Tipo de driver de red
+    ipam: # Configuración del administrador de direcciones IP
+      driver: default  # Driver de IP por defecto
+
